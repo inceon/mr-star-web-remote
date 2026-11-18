@@ -1,0 +1,24 @@
+{
+  "name": "mr-star-web-remote",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
+  "scripts": {
+    "dev": "rsbuild dev",
+    "build": "rsbuild build",
+    "preview": "rsbuild preview"
+  },
+  "dependencies": {
+    "lucide-react": "^1.72.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@rsbuild/core": "^2.3.2",
+    "@rsbuild/plugin-react": "^2.1.1"
+  },
+  "description": "Browser-based Bluetooth remote for MR Star and Miracles Star LED strips."
+}
