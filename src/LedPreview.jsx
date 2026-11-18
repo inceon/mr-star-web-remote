@@ -31,7 +31,7 @@ function sceneStyles({ palette, motion }) {
   };
 }
 
-export default function LedPreview({ ref, color, brightness, sceneId, speed, direction }) {
+export default function LedPreview({ ref, label, language, color, brightness, sceneId, speed, direction }) {
   const scene = scenesById.get(sceneId);
   const style = {
     '--preview-level': brightness / 100,
@@ -50,8 +50,8 @@ export default function LedPreview({ ref, color, brightness, sceneId, speed, dir
       style={style}
     >
       <figcaption id="preview-caption">
-        <span className="preview-label"><Eye aria-hidden="true" size={18} /> Попередній перегляд</span>
-        <span className="preview-value">{scene ? scene.name : color.toUpperCase()}</span>
+        <span className="preview-label"><Eye aria-hidden="true" size={18} /> {label}</span>
+        <span className="preview-value">{scene ? scene.name[language] : color.toUpperCase()}</span>
       </figcaption>
       <div className="preview-visual" aria-hidden="true">
         <div className="preview-track"><div className="preview-light" /></div>

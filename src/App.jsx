@@ -1,20 +1,21 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
-  AudioLines, Bluetooth, BluetoothOff, Check, ChevronDown, CircleAlert, Eye, Info, Mic,
+  AudioLines, Bluetooth, BluetoothOff, Check, ChevronDown, CircleAlert, Eye, Info, Languages, Mic,
   Palette, Play, Power, PowerOff, Sparkles, Sun, Zap,
 } from 'lucide-react';
 import LedPreview from './LedPreview.jsx';
+import { LANGUAGES, MESSAGES, readLanguage, saveLanguage } from './i18n.js';
 import { SCENE_GROUPS } from './scenes.js';
 import useLedRemote from './useLedRemote.js';
 
 const SWATCHES = [
-  ['#ff4561', 'Червоний'],
-  ['#ffa34d', 'Бурштиновий'],
-  ['#68eb84', 'Зелений'],
-  ['#39e1e6', 'Бірюзовий'],
-  ['#5596ff', 'Синій'],
-  ['#b785ff', 'Фіолетовий'],
-  ['#fff4e6', 'Теплий білий'],
+  ['#ff4561', 'red'],
+  ['#ffa34d', 'amber'],
+  ['#68eb84', 'green'],
+  ['#39e1e6', 'cyan'],
+  ['#5596ff', 'blue'],
+  ['#b785ff', 'purple'],
+  ['#fff4e6', 'warmWhite'],
 ];
 const HEX_COLOR = /^#?[\da-f]{6}$/i;
 
@@ -57,6 +58,8 @@ function SelectField({ id, label, value, onChange, children }) {
 
 export default function App() {
   const remote = useLedRemote();
+  const [language, setLanguage] = useState(readLanguage);
+  const messages = MESSAGES[language];
   const [color, setColor] = useState('#b785ff');
   const [hex, setHex] = useState('#B785FF');
   const [brightness, setBrightness] = useState(80);
@@ -68,9 +71,15 @@ export default function App() {
   const [previewingScene, setPreviewingScene] = useState(false);
   const previewRef = useRef(null);
   const commandsDisabled = !remote.connected || remote.busy;
-  const deviceLabel = remote.connected ? remote.deviceName || 'Під’єднано' : 'Не під’єднано';
+  const deviceLabel = remote.connected ? remote.deviceName || messages.connected : messages.disconnected;
   const ConnectionIcon = remote.connected ? BluetoothOff : Bluetooth;
   const StatusIcon = remote.status.tone === 'error' ? CircleAlert : Info;
+
+  useEffect(() => {
+    document.documentElement.lang = language;
+    document.title = MESSAGES[language].title;
+    saveLanguage(language);
+  }, [language]);
 
   function chooseColor(nextColor) {
     setColor(nextColor);
@@ -110,7 +119,14 @@ export default function App() {
         <div className="shell topbar-inner">
           <div className="brand">
             <span className="brand-mark"><Zap aria-hidden="true" size={23} /></span>
-            <div><h1>MR Star</h1><p>Пульт LED-стрічки</p></div>
+            <div><h1>MR Star</h1><p>{messages.subtitle}</p></div>
+          </div>
+          <div className="language-switch">
+            <Languages className="language-icon" aria-hidden="true" size={16} />
+            <select id="language" aria-label={messages.language} value={language} onChange={event => setLanguage(event.target.value)}>
+              {LANGUAGES.map(({ code, name }) => <option key={code} value={code} lang={code}>{name}</option>)}
+            </select>
+            <ChevronDown className="language-arrow" aria-hidden="true" size={14} />
           </div>
           <div className="connection">
             <span id="device-state" className="state" data-connected={remote.connected} title={deviceLabel}>
@@ -124,7 +140,7 @@ export default function App() {
               onClick={remote.toggleConnection}
             >
               <ConnectionIcon aria-hidden="true" size={17} />
-              {remote.connected ? 'Від’єднати' : 'Під’єднати'}
+              {remote.connected ? messages.disconnect : messages.connect}
             </button>
           </div>
         </div>
@@ -135,19 +151,21 @@ export default function App() {
           <LedPreview
             ref={previewRef}
             color={color}
+            language={language}
+            label={messages.previewLabel}
             brightness={brightness}
             sceneId={previewingScene ? scene : null}
             speed={speed}
             direction={direction}
           />
           <section className="power" aria-labelledby="power-heading">
-            <h2 id="power-heading">Живлення</h2>
+            <h2 id="power-heading">{messages.power}</h2>
             <div className="power-actions">
               <button id="on" className="button power-on" type="button" disabled={commandsDisabled} onClick={() => remote.applyPower(true)}>
-                <Power aria-hidden="true" size={16} /> Увімкнути
+                <Power aria-hidden="true" size={16} /> {messages.powerOn}
               </button>
               <button id="off" className="button" type="button" disabled={commandsDisabled} onClick={() => remote.applyPower(false)}>
-                <PowerOff aria-hidden="true" size={16} /> Вимкнути
+                <PowerOff aria-hidden="true" size={16} /> {messages.powerOff}
               </button>
             </div>
           </section>
@@ -157,21 +175,21 @@ export default function App() {
           <section className="panel color-panel" aria-labelledby="color-heading">
             <div className="section-heading">
               <span className="section-icon"><Palette aria-hidden="true" size={20} /></span>
-              <h2 id="color-heading">Колір</h2>
+              <h2 id="color-heading">{messages.color}</h2>
             </div>
             <form id="color-controls" className="panel-body" onSubmit={applyColor}>
               <div className="field">
-                <span id="swatches-label" className="field-label">Готові кольори</span>
+                <span id="swatches-label" className="field-label">{messages.presets}</span>
                 <div className="swatches" role="group" aria-labelledby="swatches-label">
-                  {SWATCHES.map(([swatch, label]) => (
+                  {SWATCHES.map(([swatch, name]) => (
                     <button
                       key={swatch}
                       type="button"
                       className="swatch"
                       style={{ '--swatch': swatch }}
-                      aria-label={label}
+                      aria-label={messages.swatches[name]}
                       aria-pressed={color === swatch}
-                      title={label}
+                      title={messages.swatches[name]}
                       onClick={() => chooseColor(swatch)}
                     >
                       {color === swatch && <Check aria-hidden="true" size={15} strokeWidth={2.5} />}
@@ -180,9 +198,9 @@ export default function App() {
                 </div>
               </div>
               <div className="field">
-                <label htmlFor="hex">Власний колір</label>
+                <label htmlFor="hex">{messages.customColor}</label>
                 <div className="color-inputs">
-                  <input id="color" type="color" aria-label="Палітра власного кольору" value={color} onChange={event => chooseColor(event.target.value)} />
+                  <input id="color" type="color" aria-label={messages.colorPicker} value={color} onChange={event => chooseColor(event.target.value)} />
                   <input
                     id="hex"
                     type="text"
@@ -190,8 +208,8 @@ export default function App() {
                     onChange={changeHex}
                     maxLength={7}
                     pattern="#?[A-Fa-f0-9]{6}"
-                    title="Шість шістнадцяткових символів, наприклад #B785FF"
-                    aria-label="HEX-код кольору"
+                    title={messages.hexHint}
+                    aria-label={messages.hexColor}
                     spellCheck={false}
                     required
                   />
@@ -199,18 +217,18 @@ export default function App() {
               </div>
               <LevelSlider
                 id="brightness"
-                label="Яскравість"
+                label={messages.brightness}
                 value={brightness}
                 onChange={setBrightness}
                 action={(
                   <button id="apply-brightness" className="button compact" type="button" disabled={commandsDisabled} onClick={() => remote.applyBrightness(brightness)}>
-                    <Sun aria-hidden="true" size={15} /> Задати
+                    <Sun aria-hidden="true" size={15} /> {messages.setBrightness}
                   </button>
                 )}
               />
               <div className="panel-actions">
                 <button className="button action" type="submit" disabled={commandsDisabled}>
-                  <Check aria-hidden="true" size={17} /> Застосувати колір
+                  <Check aria-hidden="true" size={17} /> {messages.applyColor}
                 </button>
               </div>
             </form>
@@ -219,36 +237,36 @@ export default function App() {
           <section className="panel effects-panel" aria-labelledby="effects-heading">
             <div className="section-heading">
               <span className="section-icon"><Sparkles aria-hidden="true" size={20} /></span>
-              <h2 id="effects-heading">Ефекти</h2>
+              <h2 id="effects-heading">{messages.effects}</h2>
             </div>
             <div className="panel-body">
-              <SelectField id="scene" label="Сцена" value={scene} onChange={value => {
+              <SelectField id="scene" label={messages.scene} value={scene} onChange={value => {
                 setScene(value);
                 setPreviewingScene(true);
               }}>
                 {SCENE_GROUPS.map(group => (
-                  <optgroup key={group.name} label={group.name}>
-                    {group.scenes.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
+                  <optgroup key={group.name.en} label={group.name[language]}>
+                    {group.scenes.map(([id, name]) => <option key={id} value={id}>{name[language]}</option>)}
                   </optgroup>
                 ))}
               </SelectField>
-              <LevelSlider id="speed" label="Швидкість" value={speed} onChange={value => {
+              <LevelSlider id="speed" label={messages.speed} value={speed} onChange={value => {
                 setSpeed(value);
                 setPreviewingScene(true);
               }} />
-              <SelectField id="direction" label="Напрямок" value={direction} onChange={value => {
+              <SelectField id="direction" label={messages.direction} value={direction} onChange={value => {
                 setDirection(value);
                 setPreviewingScene(true);
               }}>
-                <option value={1}>Прямий</option>
-                <option value={0}>Зворотний</option>
+                <option value={1}>{messages.forward}</option>
+                <option value={0}>{messages.reverse}</option>
               </SelectField>
               <div className="panel-actions scene-actions">
                 <button id="preview-scene" className="button" type="button" onClick={previewScene}>
-                  <Eye aria-hidden="true" size={17} /> Переглянути
+                  <Eye aria-hidden="true" size={17} /> {messages.previewScene}
                 </button>
                 <button id="apply-scene" className="button action" type="button" disabled={commandsDisabled} onClick={applyScene}>
-                  <Play aria-hidden="true" size={16} /> Запустити
+                  <Play aria-hidden="true" size={16} /> {messages.startScene}
                 </button>
               </div>
             </div>
@@ -257,20 +275,20 @@ export default function App() {
           <section className="panel sound-panel" aria-labelledby="sound-heading">
             <div className="section-heading">
               <span className="section-icon"><AudioLines aria-hidden="true" size={21} /></span>
-              <h2 id="sound-heading">Реакція на звук</h2>
+              <h2 id="sound-heading">{messages.sound}</h2>
             </div>
             <div className="panel-body">
-              <SelectField id="sound-mode" label="Режим" value={soundMode} onChange={setSoundMode}>
-                <option value={1}>Енергія</option>
-                <option value={2}>Ритм</option>
-                <option value={3}>Спектр</option>
-                <option value={4}>Рухома хвиля</option>
+              <SelectField id="sound-mode" label={messages.mode} value={soundMode} onChange={setSoundMode}>
+                <option value={1}>{messages.energy}</option>
+                <option value={2}>{messages.rhythm}</option>
+                <option value={3}>{messages.spectrum}</option>
+                <option value={4}>{messages.movingWave}</option>
               </SelectField>
-              <LevelSlider id="sensitivity" label="Чутливість" value={sensitivity} onChange={setSensitivity} />
-              <p className="sound-note"><Mic aria-hidden="true" size={17} /> Для контролерів із вбудованим мікрофоном.</p>
+              <LevelSlider id="sensitivity" label={messages.sensitivity} value={sensitivity} onChange={setSensitivity} />
+              <p className="sound-note"><Mic aria-hidden="true" size={17} /> {messages.micNote}</p>
               <div className="panel-actions">
                 <button id="apply-sound" className="button action" type="button" disabled={commandsDisabled} onClick={() => remote.applySound(soundMode, sensitivity)}>
-                  <AudioLines aria-hidden="true" size={17} /> Увімкнути реакцію
+                  <AudioLines aria-hidden="true" size={17} /> {messages.enableSound}
                 </button>
               </div>
             </div>
@@ -278,7 +296,7 @@ export default function App() {
         </div>
 
         <p id="status" className="status" role="status" data-tone={remote.status.tone}>
-          <StatusIcon aria-hidden="true" size={17} /> {remote.status.message}
+          <StatusIcon aria-hidden="true" size={17} /> {messages.status[remote.status.key]}
         </p>
       </main>
     </>

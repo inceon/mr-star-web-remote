@@ -53,7 +53,7 @@ svg { flex: none; }
   gap: 20px;
 }
 .brand, .connection, .state { display: flex; align-items: center; }
-.brand { gap: 12px; flex: none; }
+.brand { gap: 12px; flex: none; margin-inline-end: auto; }
 .brand-mark, .section-icon {
   display: grid;
   place-items: center;
@@ -65,6 +65,17 @@ svg { flex: none; }
 .brand-mark { background: var(--lavender); color: var(--violet); }
 .brand h1 { font-size: 23px; font-weight: 760; line-height: 1.12; letter-spacing: -.045em; }
 .brand p { margin-top: 3px; color: var(--muted); font-size: 12px; font-weight: 560; }
+.language-switch { position: relative; flex: none; width: 143px; }
+.language-switch select { min-height: 44px; padding-inline: 34px 29px; }
+.language-switch svg {
+  position: absolute;
+  inset-block-start: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  pointer-events: none;
+}
+.language-icon { inset-inline-start: 10px; }
+.language-arrow { inset-inline-end: 9px; }
 .connection { gap: 12px; min-width: 0; }
 .state {
   gap: 7px;
@@ -416,6 +427,7 @@ input[type="range"]::-moz-range-thumb {
 @media (max-width: 630px) {
   .shell { width: calc(100% - 32px); }
   .topbar-inner { min-height: 69px; gap: 10px; }
+  .language-switch select { min-height: 37px; }
   .connection { flex-direction: column-reverse; align-items: flex-end; gap: 4px; max-width: 52%; padding-block: 6px; }
   .state { max-width: 100%; border: 0; padding: 0 3px; background: transparent; font-size: 10px; }
   .state[data-connected="true"] { background: transparent; }
@@ -432,6 +444,18 @@ input[type="range"]::-moz-range-thumb {
   .section-heading { margin-bottom: 15px; }
   .sound-panel .panel-body { display: flex; align-items: stretch; gap: 15px; }
   .sound-panel .panel-actions { padding-top: 5px; }
+}
+@media (max-width: 480px) {
+  .topbar-inner {
+    display: grid;
+    grid-template-areas: "brand connection" "language connection";
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px 10px;
+    padding-block: 10px;
+  }
+  .brand { grid-area: brand; }
+  .language-switch { grid-area: language; }
+  .connection { grid-area: connection; max-width: 44vw; padding-block: 0; }
 }
 @media (max-width: 360px) {
   .shell { width: calc(100% - 24px); }

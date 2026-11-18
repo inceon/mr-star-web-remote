@@ -26,10 +26,10 @@ export default function useLedRemote() {
   const [deviceName, setDeviceName] = useState(null);
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState(() => supported ? {
-    message: 'Увімкни стрічку, закрий MR Star на телефоні й під’єднайся через Chrome.',
+    key: 'ready',
     tone: 'normal',
   } : {
-    message: 'Відкрий пульт у Chrome або Edge через HTTPS чи localhost для доступу до Bluetooth.',
+    key: 'unsupported',
     tone: 'error',
   });
   const sessionRef = useRef({
@@ -50,8 +50,8 @@ export default function useLedRemote() {
     };
   }, []);
 
-  function report(message, tone = 'normal') {
-    setStatus({ message, tone });
+  function report(statusKey, tone = 'normal') {
+    setStatus({ key: statusKey, tone });
   }
 
   function updateBusy(session, value) {
@@ -65,12 +65,12 @@ export default function useLedRemote() {
     if (session.characteristic) {
       releaseDevice(session);
       setDeviceName(null);
-      report('Стрічку від’єднано.');
+      report('disconnected');
       return;
     }
 
     updateBusy(session, true);
-    report('Вибери свою стрічку у вікні браузера.');
+    report('chooseDevice');
     let selected;
     try {
       selected = await navigator.bluetooth.requestDevice({
@@ -82,7 +82,7 @@ export default function useLedRemote() {
       session.onDisconnect = () => {
         releaseDevice(session);
         setDeviceName(null);
-        report('З’єднання втрачено. Під’єднай стрічку знову.', 'error');
+        report('connectionLost', 'error');
       };
       selected.addEventListener('gattserverdisconnected', session.onDisconnect);
 
@@ -101,14 +101,14 @@ export default function useLedRemote() {
 
       session.characteristic = characteristic;
       setDeviceName(selected.name ?? '');
-      report('Стрічку під’єднано. Вибери колір або запусти сцену.');
+      report('connected');
     } catch (error) {
       if (!session.active || (selected && session.device !== selected)) return;
       releaseDevice(session);
       if (!selected && error.name === 'NotFoundError') {
-        report('Стрічку не вибрано.');
+        report('noDevice');
       } else {
-        report('Не вдалося під’єднатися. Перевір живлення стрічки й доступ браузера до Bluetooth. Закрий MR Star на телефоні.', 'error');
+        report('connectionFailed', 'error');
         console.error(error);
       }
     } finally {
@@ -116,7 +116,7 @@ export default function useLedRemote() {
     }
   }
 
-  async function send(frames, message, colorValue) {
+  async function send(frames, statusKey, colorValue) {
     const session = sessionRef.current;
     const target = session.characteristic;
     if (session.busy || !target) return;
@@ -130,10 +130,10 @@ export default function useLedRemote() {
       }
       if (target !== session.characteristic) return;
       if (colorValue !== undefined) session.colorValue = colorValue;
-      report(message);
+      report(statusKey);
     } catch (error) {
       if (target === session.characteristic) {
-        report('Не вдалося завершити команду. Спробуй ще раз або під’єднай стрічку знову.', 'error');
+        report('commandFailed', 'error');
         console.error(error);
       }
     } finally {
@@ -149,22 +149,22 @@ export default function useLedRemote() {
     status,
     toggleConnection,
     applyPower(on) {
-      const message = on ? 'Команду ввімкнення надіслано.' : 'Команду вимкнення надіслано.';
-      return send([powerFrame(on)], message);
+      const statusKey = on ? 'powerOnSent' : 'powerOffSent';
+      return send([powerFrame(on)], statusKey);
     },
     applyColor(color, brightness) {
       const { frames, value } = colorFrames(color, brightness);
-      return send(frames, 'Команду кольору надіслано.', value);
+      return send(frames, 'colorSent', value);
     },
     applyBrightness(brightness) {
       const frame = brightnessFrame(brightness, sessionRef.current.colorValue);
-      return send([frame], 'Команду яскравості надіслано.');
+      return send([frame], 'brightnessSent');
     },
     applyScene(scene, speed, direction) {
-      return send(sceneFrames(scene, speed, direction), 'Команди сцени, швидкості й напрямку надіслано.', 1);
+      return send(sceneFrames(scene, speed, direction), 'sceneSent', 1);
     },
     applySound(mode, sensitivity) {
-      return send(soundFrames(mode, sensitivity), 'Команди звукового режиму надіслано.', 1);
+      return send(soundFrames(mode, sensitivity), 'soundSent', 1);
     },
   };
 }
